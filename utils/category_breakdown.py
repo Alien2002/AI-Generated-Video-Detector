@@ -37,12 +37,17 @@ def build_image_categories(
     tex_score = 0.0
     tex_metrics: Dict[str, Any] = {}
     if frequency_result is not None:
-        tex_score = max(tex_score, float(getattr(frequency_result, "confidence_score", 0.0)))
-        tex_metrics["frequency_confidence"] = float(getattr(frequency_result, "confidence_score", 0.0))
+        # Cap frequency contribution to 0.4 to avoid single analyzer dominating
+        freq_conf = float(getattr(frequency_result, "confidence_score", 0.0))
+        tex_score = max(tex_score, min(0.4, freq_conf))
+        tex_metrics["frequency_confidence"] = freq_conf
     if noise_result is not None:
-        nu = float(getattr(noise_result, "noise_uniformity", 0.0))
-        tex_score = max(tex_score, min(1.0, max(0.0, (nu - 0.6) / 0.4)))
-        tex_metrics["noise_uniformity"] = nu
+        # Use noise analyzer's own confidence (incorporates uniformity, naturalness, synthetic patterns)
+        noise_conf = float(getattr(noise_result, "confidence_score", 0.0))
+        tex_metrics["noise_confidence"] = noise_conf
+        tex_metrics["noise_uniformity"] = float(getattr(noise_result, "noise_uniformity", 0.0))
+        # Scale down noise confidence for texture category (it's more about noise realism)
+        tex_score = max(tex_score, min(0.5, noise_conf * 0.7))
     cats.append(
         CategoryItem(
             name="Texture / Over-smoothing",

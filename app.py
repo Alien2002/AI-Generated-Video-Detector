@@ -19,7 +19,7 @@ image_interface = gr.Interface(
     inference.deepfakes_image_predict_report,
     gr.Image(type="filepath"),
     gr.HTML(),
-    examples=["images/lady.jpg", "images/fake_image.jpg"],
+    examples=["images/lady.jpg", "images/fake_image.png"],
     cache_examples=False,
 )
 

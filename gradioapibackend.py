@@ -244,7 +244,7 @@ def get_examples(prediction_type):
     examples = {
         'image': [
             {'name': 'Example 1', 'path': 'images/lady.jpg', 'description': 'Portrait image'},
-            {'name': 'Example 2', 'path': 'images/fake_image.jpg', 'description': 'Synthetic image'}
+            {'name': 'Example 2', 'path': 'images/fake_image.png', 'description': 'Synthetic image'}
         ],
         'video': [
             {'name': 'Example 1', 'path': 'videos/aaa.mp4', 'description': 'Video sample'},

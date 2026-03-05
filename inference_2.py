@@ -817,7 +817,16 @@ def preprocess_audio(audio_file):
 
 def deepfakes_spec_predict(input_audio):
     """Audio deepfake detection with detailed spectral analysis explanation."""
-    x, _ = input_audio
+    # Handle both file path (from Gradio) and tuple (audio_data, sr)
+    if isinstance(input_audio, str):
+        # Load audio from file path
+        audio_data, _ = _load_audio_mono(input_audio)
+        x = audio_data
+    elif isinstance(input_audio, tuple):
+        x, _ = input_audio
+    else:
+        x = input_audio
+    
     audio = preprocess_audio(x)
     spec_grads = spec_model.forward(audio)
     spec_grads_inv = np.exp(spec_grads.cpu().detach().numpy().squeeze())
