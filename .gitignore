@@ -2,3 +2,4 @@ ai-detector-venv
 __pycache__
 
 .gradio
+checkpoints/*checkpoints/model.pth
