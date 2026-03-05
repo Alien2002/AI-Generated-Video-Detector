@@ -1,0 +1,4 @@
+ai-detector-venv
+__pycache__
+
+.gradio
