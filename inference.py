@@ -6,6 +6,7 @@ import numpy as np
 import torch.nn as nn
 from models.TMC import ETMC
 from models import image
+from utils.metadata_analyzer import analyze_metadata, get_metadata_summary, MetadataResult
 
 #Set random seed for reproducibility.
 torch.manual_seed(42)
@@ -209,3 +210,160 @@ def deepfakes_video_predict(input_video):
         text = f"The video is FAKE."
     return text
 
+
+def analyze_video_with_metadata(input_video: str, include_metadata: bool = True) -> dict:
+    """
+    Perform combined analysis on video using both visual detection and metadata analysis.
+    
+    Args:
+        input_video: Path to the video file
+        include_metadata: Whether to include metadata analysis
+        
+    Returns:
+        Dictionary with combined results
+    """
+    # Get visual prediction
+    visual_result = deepfakes_video_predict(input_video)
+    
+    result = {
+        'visual_analysis': visual_result,
+        'metadata_analysis': None,
+        'combined_verdict': visual_result,
+        'confidence_factors': {}
+    }
+    
+    if include_metadata:
+        try:
+            metadata_result = analyze_metadata(input_video)
+            result['metadata_analysis'] = get_metadata_summary(metadata_result)
+            result['metadata_details'] = metadata_result.analysis_details
+            result['metadata_suspicious'] = metadata_result.is_suspicious
+            result['metadata_confidence'] = metadata_result.confidence_score
+            result['metadata_indicators'] = metadata_result.indicators
+            
+            # Combine results for final verdict
+            if metadata_result.is_suspicious:
+                # If metadata is suspicious, factor that into the verdict
+                if "REAL" in visual_result:
+                    result['combined_verdict'] = f"{visual_result} (⚠️ Metadata suggests possible AI generation)"
+                else:
+                    result['combined_verdict'] = f"{visual_result} (Metadata analysis supports this finding)"
+            
+            result['confidence_factors'] = {
+                'visual': visual_result,
+                'metadata_score': metadata_result.confidence_score,
+                'metadata_indicators_count': len(metadata_result.indicators)
+            }
+        except Exception as e:
+            result['metadata_analysis'] = f"Metadata analysis failed: {str(e)}"
+    
+    return result
+
+
+def analyze_image_with_metadata(input_image_path: str, include_metadata: bool = True) -> dict:
+    """
+    Perform combined analysis on image using both visual detection and metadata analysis.
+    
+    Args:
+        input_image_path: Path to the image file
+        include_metadata: Whether to include metadata analysis
+        
+    Returns:
+        Dictionary with combined results
+    """
+    # Read image for visual analysis
+    from PIL import Image
+    import numpy as np
+    
+    img = Image.open(input_image_path)
+    img_array = np.array(img)
+    
+    # Get visual prediction
+    visual_result = deepfakes_image_predict(img_array)
+    
+    result = {
+        'visual_analysis': visual_result,
+        'metadata_analysis': None,
+        'combined_verdict': visual_result,
+        'confidence_factors': {}
+    }
+    
+    if include_metadata:
+        try:
+            metadata_result = analyze_metadata(input_image_path)
+            result['metadata_analysis'] = get_metadata_summary(metadata_result)
+            result['metadata_details'] = metadata_result.analysis_details
+            result['metadata_suspicious'] = metadata_result.is_suspicious
+            result['metadata_confidence'] = metadata_result.confidence_score
+            result['metadata_indicators'] = metadata_result.indicators
+            
+            # Combine results for final verdict
+            if metadata_result.is_suspicious:
+                if "REAL" in visual_result:
+                    result['combined_verdict'] = f"{visual_result} (⚠️ Metadata indicates possible AI generation)"
+                else:
+                    result['combined_verdict'] = f"{visual_result} (Metadata analysis supports this finding)"
+            
+            result['confidence_factors'] = {
+                'visual': visual_result,
+                'metadata_score': metadata_result.confidence_score,
+                'metadata_indicators_count': len(metadata_result.indicators)
+            }
+        except Exception as e:
+            result['metadata_analysis'] = f"Metadata analysis failed: {str(e)}"
+    
+    return result
+
+
+def analyze_audio_with_metadata(input_audio_path: str, include_metadata: bool = True) -> dict:
+    """
+    Perform combined analysis on audio using both audio detection and metadata analysis.
+    
+    Args:
+        input_audio_path: Path to the audio file
+        include_metadata: Whether to include metadata analysis
+        
+    Returns:
+        Dictionary with combined results
+    """
+    # Load audio for analysis
+    import librosa
+    
+    audio, sr = librosa.load(input_audio_path, sr=16000)
+    audio_input = (audio, sr)
+    
+    # Get audio prediction
+    audio_result = deepfakes_spec_predict(audio_input)
+    
+    result = {
+        'audio_analysis': audio_result,
+        'metadata_analysis': None,
+        'combined_verdict': audio_result,
+        'confidence_factors': {}
+    }
+    
+    if include_metadata:
+        try:
+            metadata_result = analyze_metadata(input_audio_path)
+            result['metadata_analysis'] = get_metadata_summary(metadata_result)
+            result['metadata_details'] = metadata_result.analysis_details
+            result['metadata_suspicious'] = metadata_result.is_suspicious
+            result['metadata_confidence'] = metadata_result.confidence_score
+            result['metadata_indicators'] = metadata_result.indicators
+            
+            # Combine results for final verdict
+            if metadata_result.is_suspicious:
+                if "REAL" in audio_result:
+                    result['combined_verdict'] = f"{audio_result} (⚠️ Metadata indicates possible AI generation)"
+                else:
+                    result['combined_verdict'] = f"{audio_result} (Metadata analysis supports this finding)"
+            
+            result['confidence_factors'] = {
+                'audio': audio_result,
+                'metadata_score': metadata_result.confidence_score,
+                'metadata_indicators_count': len(metadata_result.indicators)
+            }
+        except Exception as e:
+            result['metadata_analysis'] = f"Metadata analysis failed: {str(e)}"
+    
+    return result

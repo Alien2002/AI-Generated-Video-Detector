@@ -1,10 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+import time
 from werkzeug.utils import secure_filename
 from gradio_client import Client, handle_file
-import tempfile
-import shutil
+from utils.metadata_analyzer import analyze_metadata, get_metadata_summary
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend
@@ -169,6 +169,22 @@ def predict(prediction_type):
         file.save(file_path)
         print(f"💾 File saved to: {file_path}")
         
+        # Run metadata analysis
+        metadata_result = None
+        try:
+            metadata_analysis = analyze_metadata(file_path)
+            metadata_result = {
+                'summary': get_metadata_summary(metadata_analysis),
+                'is_suspicious': metadata_analysis.is_suspicious,
+                'confidence_score': metadata_analysis.confidence_score,
+                'indicators': metadata_analysis.indicators,
+                'warnings': metadata_analysis.warnings
+            }
+            print(f"🔍 Metadata analysis: suspicious={metadata_analysis.is_suspicious}, confidence={metadata_analysis.confidence_score:.2f}")
+        except Exception as meta_err:
+            print(f"⚠️ Metadata analysis error: {meta_err}")
+            metadata_result = {'error': str(meta_err)}
+        
         try:
             # Try to use Hugging Face Space first
             if HF_AVAILABLE:
@@ -179,7 +195,8 @@ def predict(prediction_type):
                     'result': result,
                     'status': 'success',
                     'source': 'huggingface_space',
-                    'file_info': file_info
+                    'file_info': file_info,
+                    'metadata_analysis': metadata_result
                 })
             else:
                 # Fallback to demo response
@@ -190,7 +207,8 @@ def predict(prediction_type):
                     'result': demo_result,
                     'status': 'success',
                     'source': 'demo_mode',
-                    'file_info': file_info
+                    'file_info': file_info,
+                    'metadata_analysis': metadata_result
                 })
                 
         except Exception as prediction_error:
@@ -203,6 +221,7 @@ def predict(prediction_type):
                 'status': 'success',
                 'source': 'demo_fallback',
                 'file_info': file_info,
+                'metadata_analysis': metadata_result,
                 'note': 'Switched to demo mode due to prediction service unavailability'
             })
         
@@ -260,8 +279,6 @@ def handle_options(path):
     return '', 200
 
 if __name__ == '__main__':
-    import time
-    
     print("🚀 Starting AI Video Detector Backend...")
     print(f"📁 Upload folder: {UPLOAD_FOLDER}")
     print(f"📊 Max file size: {app.config['MAX_CONTENT_LENGTH'] // (1024*1024)}MB")

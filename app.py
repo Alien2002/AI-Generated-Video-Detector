@@ -3,33 +3,40 @@ import inference_2 as inference
 
 
 title="Multimodal deepfake detector"
-description="Deepfake detection for videos, images and audio modalities."
-            
-           
-video_interface = gr.Interface(inference.deepfakes_video_predict,
-                    gr.Video(),
-                    "text",
-                    examples = ["videos/celeb_synthesis.mp4", "videos/real-1.mp4"],
-                    cache_examples = False
-                    )
+description="Deepfake detection for videos, images and audio modalities with metadata analysis."
 
 
-image_interface = gr.Interface(inference.deepfakes_image_predict,
-                    gr.Image(),
-                    "text",
-                    examples = ["images/lady.jpg", "images/fake_image.jpg"],
-                    cache_examples=False
-                    )
-
-audio_interface = gr.Interface(inference.deepfakes_spec_predict,
-                               gr.Audio(),
-                               "text",
-                               examples = ["audios/DF_E_2000027.flac", "audios/DF_E_2000031.flac"],
-                               cache_examples = False)
+video_interface = gr.Interface(
+    inference.deepfakes_video_predict_report,
+    gr.Video(),
+    gr.HTML(),
+    examples=["videos/celeb_synthesis.mp4", "videos/real-1.mp4"],
+    cache_examples=False,
+)
 
 
-app = gr.TabbedInterface(interface_list= [image_interface, video_interface, audio_interface], 
-                         tab_names = ['Image inference', 'Video inference', 'Audio inference'])
+image_interface = gr.Interface(
+    inference.deepfakes_image_predict_report,
+    gr.Image(type="filepath"),
+    gr.HTML(),
+    examples=["images/lady.jpg", "images/fake_image.jpg"],
+    cache_examples=False,
+)
+
+
+audio_interface = gr.Interface(
+    inference.deepfakes_audio_predict_report,
+    gr.Audio(type="filepath"),
+    gr.HTML(),
+    examples=["audios/DF_E_2000027.flac", "audios/DF_E_2000031.flac"],
+    cache_examples=False,
+)
+
+
+app = gr.TabbedInterface(
+    interface_list=[image_interface, video_interface, audio_interface],
+    tab_names=["Image inference", "Video inference", "Audio inference"],
+)
 
 if __name__ == '__main__':
-    app.launch(share = False)
+    app.launch(server_name="0.0.0.0", server_port=7860)
